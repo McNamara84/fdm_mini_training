@@ -17,3 +17,4 @@ Route::post('/vote', [VoteController::class, 'store'])->name('vote.store');
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 Route::get('/admin/qrcodes', [AdminController::class, 'qrCodes'])->name('admin.qrcodes');
 Route::post('/admin/qrcodes', [AdminController::class, 'qrCodes']);
+Route::get('/admin/scan', [AdminController::class, 'scan'])->name('admin.scan');

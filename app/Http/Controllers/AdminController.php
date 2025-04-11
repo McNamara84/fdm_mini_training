@@ -49,4 +49,12 @@ class AdminController extends Controller
         // Übergib die Anzahl sowie die erzeugten QR-Code-Sets an die View
         return view('admin.qrcodes', compact('qrSets', 'n'));
     }
+
+    /**
+     * Zeigt die mobile Scan-Seite, auf der QR-Codes erfasst werden können.
+     */
+    public function scan()
+    {
+        return view('admin.scan');
+    }
 }
