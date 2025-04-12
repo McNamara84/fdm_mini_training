@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vote_tokens', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('question_id')->constrained()->onDelete('cascade');
-            $table->char('option_letter', 1); // z. B. A, B, C, D
-            $table->string('token')->unique();
-            $table->boolean('used')->default(false);
+        Schema::create('quiz_questions', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->text('question_text'); // Text der Frage
+            $table->integer('sort_order')->default(0); // Reihenfolge, falls gewünscht
             $table->timestamps();
         });
     }
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vote_tokens');
+        Schema::dropIfExists('questions');
     }
 };
