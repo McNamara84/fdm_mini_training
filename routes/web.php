@@ -1,20 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\QuestController;
-use App\Http\Controllers\VoteController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\QRCodesController;
 
-Route::get('/', [QuestController::class, 'showWelcome'])->name('welcome');
-Route::get('/quiz', [QuestController::class, 'showQuiz'])->name('quiz');
-Route::get('/story', [QuestController::class, 'showStory'])->name('story');
-Route::get('/summary', [QuestController::class, 'showSummary'])->name('summary');
-
-// Route für das Speichern von Votes via AJAX oder Livewire.
-Route::post('/vote', [VoteController::class, 'store'])->name('vote.store');
-
-// Admin-Dashboard (Zugriff hierüber benötigen Trainingsleiter-Accounts)
-Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-Route::get('/admin/qrcodes', [AdminController::class, 'qrCodes'])->name('admin.qrcodes');
-Route::post('/admin/qrcodes', [AdminController::class, 'qrCodes']);
-Route::get('/admin/scan', [AdminController::class, 'scan'])->name('admin.scan');
+Route::get('/admin/qrcodes', [QRCodesController::class, 'index'])->name('admin.qrcodes.index');
