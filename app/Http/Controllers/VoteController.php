@@ -18,9 +18,9 @@ class VoteController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'question_id'      => 'required|integer|exists:questions,id',
-            'token'            => 'required|string',
+        $validator = \Validator::make($request->all(), [
+            'question_id' => 'required|integer|exists:questions,id',
+            'token' => 'required|string',
             'group_identifier' => 'nullable|string',
         ]);
 
@@ -28,22 +28,30 @@ class VoteController extends Controller
             return response()->json(['error' => 'Ungültige Daten'], 400);
         }
 
-        // Finde die Antwortoption, die zur Frage und zum übermittelten Token passt.
-        $option = QuestionOption::where('question_id', $request->input('question_id'))
-                    ->where('token', $request->input('token'))
-                    ->first();
+        // Suche in der vote_tokens Tabelle statt in question_options
+        $tokenRecord = \DB::table('vote_tokens')
+            ->where('question_id', $request->input('question_id'))
+            ->where('token', $request->input('token'))
+            ->where('used', false)
+            ->first();
 
-        if (!$option) {
-            return response()->json(['error' => 'Ungültiger QR-Code-Token'], 400);
+        if (!$tokenRecord) {
+            return response()->json(['error' => 'Ungültiger oder bereits verwendeter QR-Code-Token'], 400);
         }
 
-        // Speichere die Stimme in der Datenbank.
+        // Speichere den Vote, hier wird angenommen, dass question_option_id nicht benötigt wird,
+        // da wir über den Token eindeutig die Option ermitteln können.
         Vote::create([
-            'question_id'         => $option->question_id,
-            'question_option_id'  => $option->id,
-            'group_identifier'    => $request->input('group_identifier'),
+            'question_id' => $tokenRecord->question_id,
+            // optional: Du kannst hier auch den Button bzw. Buchstaben speichern:
+            // 'question_option_id' => ?  (Falls du diesen Bezug herstellen möchtest)
+            'group_identifier' => $request->input('group_identifier'),
         ]);
+
+        // Markiere den Token als verwendet
+        \DB::table('vote_tokens')->where('id', $tokenRecord->id)->update(['used' => true]);
 
         return response()->json(['success' => true]);
     }
+
 }

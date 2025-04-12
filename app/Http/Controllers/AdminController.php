@@ -36,10 +36,21 @@ class AdminController extends Controller
             for ($i = 0; $i < $n; $i++) {
                 $set = [];
                 // Für die Optionen A, B, C und D wird jeweils ein zufälliger Token generiert,
-                // und es wird eine URL aufgebaut.
+                // der in der vote_tokens-Tabelle gespeichert wird.
                 foreach (['A', 'B', 'C', 'D'] as $letter) {
                     $token = Str::random(10);
-                    $url = $baseUrl . "?option={$letter}&token={$token}";
+
+                    // Speichere den Token in die vote_tokens-Tabelle.
+                    \DB::table('vote_tokens')->insert([
+                        'question_id' => 1, // hier Beispiel: Frage mit ID 1
+                        'option_letter' => $letter,
+                        'token' => $token,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Erstelle dann die URL inklusive aller nötigen Parameter.
+                    $url = $baseUrl . "?question_id=1&option={$letter}&token={$token}";
                     $set[$letter] = $url;
                 }
                 $qrSets[] = $set;
@@ -49,6 +60,7 @@ class AdminController extends Controller
         // Übergib die Anzahl sowie die erzeugten QR-Code-Sets an die View
         return view('admin.qrcodes', compact('qrSets', 'n'));
     }
+
 
     /**
      * Zeigt die mobile Scan-Seite, auf der QR-Codes erfasst werden können.
