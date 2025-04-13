@@ -75,7 +75,7 @@
                             Forschungsdaten &amp; Forschungsdatenmanagement
                         </div>
                         <div class="logo">
-                            <img src="{{ asset('images/gfz-logo-en.jpg') }}" alt="GFZ Logo" width="60px">
+                            <img src="{{ asset('images/gfz-logo-en.png') }}" alt="GFZ Logo" width="60px">
                         </div>
                     </div>
                     <div class="info">

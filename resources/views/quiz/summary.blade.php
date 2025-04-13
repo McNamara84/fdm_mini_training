@@ -13,7 +13,7 @@
         <div class="flex items-center justify-between mb-6">
             <img src="{{ asset('images/fhp-logo.png') }}" alt="FHP Logo" class="h-16">
             <h1 class="text-3xl font-bold text-center">Training 1: Auswertung</h1>
-            <img src="{{ asset('images/gfz-logo-en.jpg') }}" alt="GFZ Logo" class="h-16">
+            <img src="{{ asset('images/gfz-logo-en.png') }}" alt="GFZ Logo" class="h-16">
         </div>
         <div class="bg-white shadow-lg rounded-lg p-6">
             @foreach($questions as $question)
