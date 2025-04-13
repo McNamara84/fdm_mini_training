@@ -13,3 +13,4 @@ Route::prefix('admin')->group(function () {
 Route::get('/quiz', [QuizController::class, 'index'])->name('quiz.index');
 Route::get('/quiz/results/{questionId}', [QuizController::class, 'getResults'])->name('quiz.results.get');
 Route::get('/quiz/summary', [QuizController::class, 'summary'])->name('quiz.summary');
+Route::post('/quiz/reset', [QuizController::class, 'reset'])->name('quiz.reset');
