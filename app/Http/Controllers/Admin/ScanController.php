@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Scan;
 use App\Models\QRCode;
 use App\Models\QuizQuestion;
+use Illuminate\Support\Facades\DB;
 
 class ScanController extends Controller
 {
