@@ -12,14 +12,18 @@ class ScanController extends Controller
 {
     /**
      * Zeige die Scan-Seite.
-     * Optional: Eine Auswahl der aktuell aktiven Quizfragen zur Zuordnung.
+     * Hier wird der aktuell aktive Fragensatz aus der zentralen Status-Tabelle ausgelesen.
      */
     public function index()
     {
-        // Alle Quizfragen laden (sortiert nach der gewünschten Reihenfolge)
-        $quizQuestions = QuizQuestion::orderBy('sort_order')->get();
+        // Lese den aktuellen aktiven Fragensatz aus der Tabelle 'active_quiz'
+        $activeQuizRecord = DB::table('active_quiz')->first();
+        $activeQuestion = null;
+        if ($activeQuizRecord) {
+            $activeQuestion = QuizQuestion::with('options')->find($activeQuizRecord->quiz_question_id);
+        }
 
-        return view('admin.scan.index', compact('quizQuestions'));
+        return view('admin.scan.index', compact('activeQuestion'));
     }
 
     /**
@@ -33,7 +37,7 @@ class ScanController extends Controller
             'quiz_question_id' => 'required|integer|exists:quiz_questions,id',
         ]);
 
-        // Das erwartete Format: "Group: X, Option: Y"
+        // Erwartetes Format: "Group: X, Option: Y"
         $pattern = '/Group:\s*(\d+),\s*Option:\s*([A-D])/i';
         if (preg_match($pattern, $data['qr_data'], $matches)) {
             $groupId = $matches[1];
