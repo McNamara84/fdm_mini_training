@@ -64,4 +64,22 @@ class QuizController extends Controller
         DB::table('scans')->truncate();
         return redirect()->route('quiz.index');
     }
+
+    /**
+     * Aktualisiert den aktiven Fragensatz.
+     * Erwartet einen POST-Request mit 'quiz_question_id'.
+     */
+    public function updateActiveQuestion(Request $request)
+    {
+        $data = $request->validate([
+            'quiz_question_id' => 'required|integer|exists:quiz_questions,id',
+        ]);
+
+        DB::table('active_quiz')->update([
+            'quiz_question_id' => $data['quiz_question_id'],
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
 }

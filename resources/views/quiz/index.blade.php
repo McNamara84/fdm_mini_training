@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <title>FDM-Mini-Training 1</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <div class="max-w-5xl mx-auto p-6">
         <!-- Header mit Logos -->
@@ -31,15 +33,33 @@
     </div>
 
     <script>
-        // Liste der Fragen, die vom Controller als JSON übergeben wurde
+        // Liste der Fragen (wird vom Controller als JSON übergeben)
         const questions = @json($questions);
         let currentQuestionIndex = 0;
         let pollInterval;
 
-        // Rendert die aktuelle Frage samt Antwortoptionen und Badge, falls alle Antworten vorhanden sind.
+        // Aktualisiert den aktiven Fragensatz im Backend
+        function setActiveQuestion(questionId) {
+            fetch("{{ route('quiz.active.update') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ quiz_question_id: questionId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log("Aktiver Fragewert aktualisiert auf: " + questionId);
+                    }
+                })
+                .catch(error => console.error("Fehler beim Aktualisieren des aktiven Fragewerts:", error));
+        }
+
+        // Rendert die aktuelle Frage samt Antwortoptionen und einem "Fertig!" Badge, falls alle 6 Antworten vorliegen.
         function renderQuestion() {
             if (currentQuestionIndex >= questions.length) {
-                // Falls alle Fragen abgearbeitet sind, leite zur Zusammenfassungsseite weiter.
                 window.location.href = "{{ route('quiz.summary') }}";
                 return;
             }
@@ -53,7 +73,7 @@
             questionTitle.textContent = currentQuestion.question_text;
             container.appendChild(questionTitle);
 
-            // Badge "Fertig!" (wird später anhand der Scans gesetzt)
+            // Badge "Fertig!" (wird eingeblendet, wenn 6 Antworten vorliegen)
             const badge = document.createElement('div');
             badge.id = "ready-badge";
             badge.className = "hidden inline-block bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mb-4";
@@ -66,12 +86,11 @@
             currentQuestion.options.forEach(option => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = "p-4 bg-gray-50 rounded shadow flex items-center justify-between";
-                
+
                 const optionText = document.createElement('span');
                 optionText.className = "font-medium";
                 optionText.textContent = `${option.letter}: ${option.option_text}`;
-                
-                // Platzhalter für Live-Zählung
+
                 const voteCount = document.createElement('span');
                 voteCount.className = "text-xl font-bold text-blue-600";
                 voteCount.id = `vote-${option.letter}`;
@@ -83,45 +102,48 @@
             });
             container.appendChild(optionsList);
 
-            // Aktualisiere den Status des Back-Buttons
+            // Update des "Zurück"-Buttons (deaktivieren, wenn erste Frage)
             document.getElementById('back-button').disabled = (currentQuestionIndex === 0);
+
+            // Aktualisiere den aktiven Fragensatz zentral
+            setActiveQuestion(currentQuestion.id);
 
             // Starte das Polling der Live-Ergebnisse
             startPolling(currentQuestion.id);
         }
 
-        // Holt per AJAX die aktuellen Scan-Ergebnisse für die gegebene Frage und aktualisiert die Anzeige.
+        // Holt per AJAX die aktuellen Scan-Ergebnisse für die gegebene Frage
         function startPolling(questionId) {
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
                 fetch("{{ url('/quiz/results') }}/" + questionId)
-                .then(response => response.json())
-                .then(data => {
-                    let totalVotes = 0;
-                    for (const letter in data) {
-                        totalVotes += parseInt(data[letter]);
-                        const voteElement = document.getElementById('vote-' + letter);
-                        if (voteElement) voteElement.textContent = data[letter];
-                    }
-                    // Falls alle 6 Antworten erfasst wurden, Badge "Fertig!" anzeigen.
-                    if (totalVotes >= 6) {
-                        document.getElementById('ready-badge').classList.remove('hidden');
-                    } else {
-                        document.getElementById('ready-badge').classList.add('hidden');
-                    }
-                })
-                .catch(error => console.error("Fehler beim Abrufen der Ergebnisse:", error));
-            }, 2000); // Aktualisierung alle 2 Sekunden
+                    .then(response => response.json())
+                    .then(data => {
+                        let totalVotes = 0;
+                        for (const letter in data) {
+                            totalVotes += parseInt(data[letter]);
+                            const voteElement = document.getElementById('vote-' + letter);
+                            if (voteElement) voteElement.textContent = data[letter];
+                        }
+                        // Zeige Badge "Fertig!", wenn alle 6 Antworten erfasst wurden
+                        if (totalVotes >= 6) {
+                            document.getElementById('ready-badge').classList.remove('hidden');
+                        } else {
+                            document.getElementById('ready-badge').classList.add('hidden');
+                        }
+                    })
+                    .catch(error => console.error("Fehler beim Abrufen der Ergebnisse:", error));
+            }, 2000);
         }
 
-        // Event Listener für "Weiter"
+        // Event Listener: "Weiter"
         document.getElementById('next-button').addEventListener('click', () => {
             if (pollInterval) clearInterval(pollInterval);
             currentQuestionIndex++;
             renderQuestion();
         });
 
-        // Event Listener für "Zurück"
+        // Event Listener: "Zurück"
         document.getElementById('back-button').addEventListener('click', () => {
             if (currentQuestionIndex > 0) {
                 if (pollInterval) clearInterval(pollInterval);
@@ -133,5 +155,7 @@
         // Initiale Anzeige der ersten Frage
         renderQuestion();
     </script>
+
 </body>
+
 </html>
