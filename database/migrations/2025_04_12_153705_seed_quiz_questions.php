@@ -50,7 +50,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q1Id,
                 'letter' => 'D',
-                'option_text' => 'Wettervorhersagen',
+                'option_text' => 'Daten, die die EU als Forschungsdaten festgelegt hat',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -59,7 +59,7 @@ return new class extends Migration
 
         // Frage 2
         $q2Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '2. Welche Eigenschaften sollten Forschungsdaten im Sinne der FAIR-Prinzipien besitzen?',
+            'question_text' => '2. Welche Herausforderung besteht bei der Definition von Forschungsdaten?',
             'sort_order' => 2,
             'created_at' => $now,
             'updated_at' => $now,
@@ -68,23 +68,23 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q2Id,
                 'letter' => 'A',
-                'option_text' => 'Findbar, zugänglich, interoperabel und wiederverwendbar',
-                'is_correct' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'quiz_question_id' => $q2Id,
-                'letter' => 'B',
-                'option_text' => 'Schnell, billig, schön und perfekt',
+                'option_text' => 'Weil die NFDI festlegt was Forschungsdaten sind, ist keine besondere Definition notwendig',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
                 'quiz_question_id' => $q2Id,
+                'letter' => 'B',
+                'option_text' => 'Das Verständnis variiert stark zwischen Fachbereichen und Projekten',
+                'is_correct' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'quiz_question_id' => $q2Id,
                 'letter' => 'C',
-                'option_text' => 'Privat, geheim, isoliert und unzugänglich',
+                'option_text' => 'Forschungsdaten sind immer standardisiert, was die Definition vereinfacht',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -92,7 +92,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q2Id,
                 'letter' => 'D',
-                'option_text' => 'Zufällig, unstrukturiert, uneinheitlich und frei interpretierbar',
+                'option_text' => 'Nur große Forschungsprojekte benötigen eine Definition von Forschungsdaten',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -101,7 +101,7 @@ return new class extends Migration
 
         // Frage 3
         $q3Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '3. Welche Rolle spielen Metadaten im Forschungsdatenmanagement?',
+            'question_text' => '3. Warum ist es wichtig, auch Software und Simulationen als Forschungsdaten anzusehen?',
             'sort_order' => 3,
             'created_at' => $now,
             'updated_at' => $now,
@@ -110,15 +110,15 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q3Id,
                 'letter' => 'A',
-                'option_text' => 'Sie beschreiben die Daten und ermöglichen so eine leichtere Auffindbarkeit und Interpretation',
-                'is_correct' => true,
+                'option_text' => 'Weil sie meist kostenlos verfügbar sind',
+                'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
                 'quiz_question_id' => $q3Id,
                 'letter' => 'B',
-                'option_text' => 'Sie speichern direkt alle Rohdaten',
+                'option_text' => 'Weil sie leicht reproduzierbar sind',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -126,7 +126,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q3Id,
                 'letter' => 'C',
-                'option_text' => 'Sie dokumentieren ausschließlich experimentelle Fehler',
+                'option_text' => 'Weil sie keine menschliche Interpretation erfordern',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -134,8 +134,8 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q3Id,
                 'letter' => 'D',
-                'option_text' => 'Sie ersetzen die Originaldaten',
-                'is_correct' => false,
+                'option_text' => 'Weil sie oft die Grundlage für Schlussfolgerungen und Erkenntnisse bilden',
+                'is_correct' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
@@ -143,7 +143,7 @@ return new class extends Migration
 
         // Frage 4
         $q4Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '4. Wie kann die Qualität von Forschungsdaten sichergestellt werden?',
+            'question_text' => '4. Welchen Zweck verfolgt das Forschungsdatenmanagement primär?',
             'sort_order' => 4,
             'created_at' => $now,
             'updated_at' => $now,
@@ -152,23 +152,23 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q4Id,
                 'letter' => 'A',
-                'option_text' => 'Durch standardisierte Verfahren zur Datenerhebung, Validierung und Dokumentation',
-                'is_correct' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'quiz_question_id' => $q4Id,
-                'letter' => 'B',
-                'option_text' => 'Durch spontane Dateneingabe ohne Überprüfung',
+                'option_text' => 'Die reine Datensammlung zu beschleunigen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
                 'quiz_question_id' => $q4Id,
+                'letter' => 'B',
+                'option_text' => 'Die Qualitätssicherung der Daten über den gesamten Forschungsprozess',
+                'is_correct' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'quiz_question_id' => $q4Id,
                 'letter' => 'C',
-                'option_text' => 'Durch manuelle Speicherung in unstrukturierten Dateien',
+                'option_text' => 'Die Datenmenge zu maximieren, um umfassendere Analysen zu ermöglichen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -176,7 +176,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q4Id,
                 'letter' => 'D',
-                'option_text' => 'Durch ausschließliche Nutzung analoger Methoden',
+                'option_text' => 'Die Datenspeicherung zu vereinfachen, unabhängig von der Qualität',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -185,7 +185,7 @@ return new class extends Migration
 
         // Frage 5 (Geowissenschaftliches Beispiel)
         $q5Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '5. Ein Bohrkern aus einem geologischen Untersuchungsgebiet zeigt verschiedene Gesteinsschichten. Welche Information ist am wichtigsten für die Interpretation der Daten?',
+            'question_text' => '5. Wie trägt Forschungsdatenmanagement zur Transparenz von Forschung bei',
             'sort_order' => 5,
             'created_at' => $now,
             'updated_at' => $now,
@@ -194,23 +194,23 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q5Id,
                 'letter' => 'A',
-                'option_text' => 'Die stratigraphische Reihenfolge der Gesteinsschichten',
-                'is_correct' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'quiz_question_id' => $q5Id,
-                'letter' => 'B',
-                'option_text' => 'Die Farbe des Bohrkerns',
+                'option_text' => 'Durch die Verschlüsselung sensibler Daten',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
                 'quiz_question_id' => $q5Id,
+                'letter' => 'B',
+                'option_text' => 'Durch die detaillierte Dokumentation und Nachvollziehbarkeit der Forschungsprozesse',
+                'is_correct' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'quiz_question_id' => $q5Id,
                 'letter' => 'C',
-                'option_text' => 'Die Temperatur im Bohrloch',
+                'option_text' => 'Durch die Beschränkung des Zugangs zu den Daten auf bestimmte Personen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -218,7 +218,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q5Id,
                 'letter' => 'D',
-                'option_text' => 'Die Verpackung der Probensammlung',
+                'option_text' => 'Durch die Nutzung proprietärer Software',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -227,7 +227,7 @@ return new class extends Migration
 
         // Frage 6
         $q6Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '6. Welches Ziel verfolgt ein effektives Forschungsdatenmanagement an Hochschulen?',
+            'question_text' => '6. Welchen Vorteil bietet die Nachnutzung von Forschungsdaten?',
             'sort_order' => 6,
             'created_at' => $now,
             'updated_at' => $now,
@@ -236,7 +236,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q6Id,
                 'letter' => 'A',
-                'option_text' => 'Die nachhaltige Verfügbarkeit, Transparenz und Wiederverwendbarkeit von Forschungsdaten',
+                'option_text' => 'Sie vermeidet unnötige Doppelarbeit und spart Ressourcen',
                 'is_correct' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -244,7 +244,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q6Id,
                 'letter' => 'B',
-                'option_text' => 'Die monetäre Verwertung von Daten durch Verkauf an Dritte',
+                'option_text' => 'Sie erhöht den Wettbewerb zwischen Forschungsgruppen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -252,7 +252,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q6Id,
                 'letter' => 'C',
-                'option_text' => 'Die komplette Archivierung ohne praktische Nutzbarkeit',
+                'option_text' => 'Sie führt zu einer geringeren Publikationsrate',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -260,7 +260,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q6Id,
                 'letter' => 'D',
-                'option_text' => 'Die Verbreitung von Daten ausschließlich innerhalb kleiner Forscherteams',
+                'option_text' => 'Sie ist irrelevant für die wissenschaftliche Gemeinschaft',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -269,7 +269,7 @@ return new class extends Migration
 
         // Frage 7 (Schwer)
         $q7Id = DB::table('quiz_questions')->insertGetId([
-            'question_text' => '7. Welche technischen und organisatorischen Maßnahmen sind zentral, um die Integrität und Authentizität von Forschungsdaten zu gewährleisten?',
+            'question_text' => '7. Wie wirkt sich das Teilen von Forschungsdaten auf die Sichtbarkeit der Forschenden aus?',
             'sort_order' => 7,
             'created_at' => $now,
             'updated_at' => $now,
@@ -278,7 +278,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q7Id,
                 'letter' => 'A',
-                'option_text' => 'Einsatz von digitalen Signaturen, detaillierter Protokollierung und strikter Zugangskontrolle',
+                'option_text' => 'Es hat keinen Einfluss',
                 'is_correct' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -286,7 +286,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q7Id,
                 'letter' => 'B',
-                'option_text' => 'Tägliche manuelle Überprüfung durch mehrere Personen',
+                'option_text' => 'Es kann die Sichtbarkeit und Zitationsrate erhöhen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -294,7 +294,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q7Id,
                 'letter' => 'C',
-                'option_text' => 'Speicherung der Daten auf ungeschützten Servern',
+                'option_text' => 'Es führt zu Datenschutzproblemen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -302,7 +302,7 @@ return new class extends Migration
             [
                 'quiz_question_id' => $q7Id,
                 'letter' => 'D',
-                'option_text' => 'Verwendung von unverschlüsselten E-Mail-Anhängen zum Datenaustausch',
+                'option_text' => 'Es reduziert die Notwendigkeit für eigene Publikationen',
                 'is_correct' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
