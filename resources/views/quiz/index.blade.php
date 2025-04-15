@@ -35,13 +35,12 @@
     </div>
 
     <script>
-        // Liste der Fragen, die vom Controller als JSON übergeben wurde
+        // Liste der Fragen (vom Controller als JSON übergeben)
         const questions = @json($questions);
         let currentQuestionIndex = 0;
         let pollInterval;
-        let currentResults = {}; // Hier werden die abgefragten Ergebnisse gespeichert
-        // globaler Status für den "show-results-button":
-        // 0: noch nicht geklickt, 1: erste Klick (Ergebnisse einblenden, Buttontext ändern)
+        let currentResults = {}; // Zum Zwischenspeichern der abgefragten Ergebnisse
+        // Globaler Status für den "show-results-button": 0 = initial, 1 = Ergebnisse sichtbar
         let showResultsButtonState = 0;
 
         // Aktualisiert den aktiven Fragensatz im Backend
@@ -54,26 +53,29 @@
                 },
                 body: JSON.stringify({ quiz_question_id: questionId })
             })
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        console.log("Aktiver Fragewert aktualisiert auf: " + questionId);
-                    }
-                })
-                .catch(error => console.error("Fehler beim Aktualisieren des aktiven Fragewerts:", error));
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    console.log("Aktiver Fragewert aktualisiert auf: " + questionId);
+                }
+            })
+            .catch(error => console.error("Fehler beim Aktualisieren des aktiven Fragewerts:", error));
         }
 
-        // Rendert die aktuelle Frage samt Antwortoptionen.
-        // Zusätzlich wird in jeder Option per data-Attribut gespeichert, ob sie korrekt ist.
+        // Rendert die aktuelle Frage mit Antwortoptionen und dem "Fertig!"-Badge.
+        // Beim Neuladen wird der Button "Antworten anzeigen" zurückgesetzt und reaktiviert.
         function renderQuestion() {
             if (currentQuestionIndex >= questions.length) {
                 window.location.href = "{{ route('quiz.summary') }}";
                 return;
             }
-            // Reset des Button-Status, sobald eine neue Frage angezeigt wird
+            // Reset des Button-Status für die aktuelle Frage
             showResultsButtonState = 0;
-            document.getElementById('show-results-button').classList.add('hidden');
-            document.getElementById('show-results-button').textContent = "Antworten anzeigen";
+            const showResultsButton = document.getElementById('show-results-button');
+            showResultsButton.classList.add('hidden');
+            showResultsButton.textContent = "Antworten anzeigen";
+            // Wichtige Ergänzung: Button wieder aktivieren
+            showResultsButton.disabled = false;
 
             const currentQuestion = questions[currentQuestionIndex];
             const container = document.getElementById('quiz-container');
@@ -92,20 +94,18 @@
             badge.textContent = "Fertig!";
             container.appendChild(badge);
 
-            // Antwortoptionen: Erstelle für jede Option ein Card-Element und speichere per data-Attribut, ob sie richtig ist
+            // Antwortoptionen: Erstelle pro Option eine Card und speichere, ob sie richtig ist.
             const optionsList = document.createElement('div');
             optionsList.className = "space-y-4";
             currentQuestion.options.forEach(option => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = "option-card p-4 bg-gray-50 rounded shadow flex items-center justify-between";
-                // Speichere ob die Option korrekt ist, als data-Attribut
                 optionDiv.setAttribute('data-correct', option.is_correct ? "true" : "false");
 
                 const optionText = document.createElement('span');
                 optionText.className = "font-medium";
                 optionText.textContent = `${option.letter}: ${option.option_text}`;
 
-                // Vote-Count: initial leer und unsichtbar
                 const voteCount = document.createElement('span');
                 voteCount.className = "text-xl font-bold text-blue-600";
                 voteCount.id = `vote-${option.letter}`;
@@ -118,18 +118,18 @@
             });
             container.appendChild(optionsList);
 
-            // Button "Zurück" deaktivieren, wenn wir bei der ersten Frage sind
+            // "Zurück"-Button deaktivieren, wenn erste Frage
             document.getElementById('back-button').disabled = (currentQuestionIndex === 0);
 
             // Aktualisiere den aktiven Fragensatz zentral
             setActiveQuestion(currentQuestion.id);
 
-            // Starte das Polling der Live-Ergebnisse für diese Frage
+            // Starte Polling der Live-Ergebnisse
             startPolling(currentQuestion.id);
         }
 
         // Holt per AJAX die aktuellen Scan-Ergebnisse für die gegebene Frage
-        // Speichert die Ergebnisse in currentResults und zeigt den "Antworten anzeigen"-Button, wenn alle 6 Stimmen abgegeben sind.
+        // Speichert die Ergebnisse in currentResults und zeigt den Button, wenn alle 6 Stimmen da sind.
         function startPolling(questionId) {
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
@@ -141,16 +141,11 @@
                             totalVotes += parseInt(data[letter]);
                         }
                         if (totalVotes >= 6) {
-                            // Ergebnisse werden in globaler Variable gespeichert
                             currentResults = data;
-                            // Zeige den "Antworten anzeigen"-Button (falls noch nicht sichtbar)
                             document.getElementById('show-results-button').classList.remove('hidden');
-                            // Blende den "Fertig!"-Badge ein
                             document.getElementById('ready-badge').classList.remove('hidden');
                         } else {
-                            // Wenn noch nicht alle Antworten da sind: Button ausblenden
                             document.getElementById('show-results-button').classList.add('hidden');
-                            // Setze alle Vote-Anzeigen zurück und unsichtbar
                             for (const letter in data) {
                                 const voteElement = document.getElementById('vote-' + letter);
                                 if (voteElement) {
@@ -165,10 +160,10 @@
             }, 2000);
         }
 
-        // Event Listener für den Button "Antworten anzeigen" / "Lösung anzeigen"
+        // Event Listener für "Antworten anzeigen" / "Lösung anzeigen"
         document.getElementById('show-results-button').addEventListener('click', () => {
             if (showResultsButtonState === 0) {
-                // Erster Klick: Zeige die abgefragten Stimmen in den Vote-Elementen an
+                // Erster Klick: Ergebnisse anzeigen
                 for (const letter in currentResults) {
                     const voteElement = document.getElementById('vote-' + letter);
                     if (voteElement) {
@@ -176,11 +171,10 @@
                         voteElement.style.visibility = 'visible';
                     }
                 }
-                // Ändere den Buttontext zu "Lösung anzeigen" und aktualisiere den Status
                 document.getElementById('show-results-button').textContent = "Lösung anzeigen";
                 showResultsButtonState = 1;
             } else if (showResultsButtonState === 1) {
-                // Zweiter Klick: Färbe die Antwortkarten ein – grün für richtig, rot für falsch
+                // Zweiter Klick: Optionenkarten einfärben
                 const optionCards = document.querySelectorAll('.option-card');
                 optionCards.forEach(card => {
                     const isCorrect = card.getAttribute('data-correct') === "true";
@@ -192,10 +186,7 @@
                         card.classList.add('bg-red-200');
                     }
                 });
-                // Nach Anzeige der Lösung kann der Button auch deaktiviert oder ausgeblendet werden
                 document.getElementById('show-results-button').disabled = true;
-                // Optional: Alternativ den Button ausblenden:
-                // document.getElementById('show-results-button').classList.add('hidden');
             }
         });
 
