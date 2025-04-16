@@ -18,14 +18,14 @@
             <div id="quiz-container">
                 <!-- Dynamischer Inhalt: Frage und Antwortoptionen -->
             </div>
-            <!-- Navigationsbereich mit drei Buttons:
-                 "Zurück", "Antworten anzeigen" (zweistufig) und "Weiter" -->
+            <!-- Navigationsbereich mit drei Buttons: "Zurück", "Antworten anzeigen" (mit Countdown) und "Weiter" -->
             <div class="mt-6 flex justify-center items-center space-x-4">
                 <button id="back-button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
                     Zurück
                 </button>
-                <button id="show-results-button" class="hidden bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                    Antworten anzeigen
+                <!-- Button ist von Anfang an sichtbar, aber deaktiviert und zeigt den Countdown -->
+                <button id="show-results-button" disabled class="bg-green-500 text-white font-bold py-2 px-4 rounded">
+                    00:60
                 </button>
                 <button id="next-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Weiter
@@ -35,15 +35,16 @@
     </div>
 
     <script>
-        // Liste der Fragen (vom Controller als JSON übergeben)
+        // Globale Variablen
         const questions = @json($questions);
         let currentQuestionIndex = 0;
         let pollInterval;
-        let currentResults = {}; // Zum Zwischenspeichern der abgefragten Ergebnisse
-        // Globaler Status für den "show-results-button": 0 = initial, 1 = Ergebnisse sichtbar
+        let countdownInterval;
+        let currentResults = {}; // Zwischenspeicherung der abgefragten Ergebnisse
+        // Status für den "show-results-button": 0 = initial, 1 = Ergebnisse sichtbar
         let showResultsButtonState = 0;
-
-        // Aktualisiert den aktiven Fragensatz im Backend
+    
+        // Aktualisiert den aktiven Fragensatz im Backend (optional)
         function setActiveQuestion(questionId) {
             fetch("{{ route('quiz.active.update') }}", {
                 method: "POST",
@@ -61,9 +62,8 @@
             })
             .catch(error => console.error("Fehler beim Aktualisieren des aktiven Fragewerts:", error));
         }
-
-        // Rendert die aktuelle Frage mit Antwortoptionen und dem "Fertig!"-Badge.
-        // Beim Neuladen wird der Button "Antworten anzeigen" zurückgesetzt und reaktiviert.
+    
+        // Rendert die aktuelle Frage, setzt den Countdown zurück und startet das Polling
         function renderQuestion() {
             if (currentQuestionIndex >= questions.length) {
                 window.location.href = "{{ route('quiz.summary') }}";
@@ -72,98 +72,106 @@
             // Reset des Button-Status für die aktuelle Frage
             showResultsButtonState = 0;
             const showResultsButton = document.getElementById('show-results-button');
-            showResultsButton.classList.add('hidden');
-            showResultsButton.textContent = "Antworten anzeigen";
-            // Wichtige Ergänzung: Button wieder aktivieren
-            showResultsButton.disabled = false;
-
+            showResultsButton.disabled = true;
+            // Setze den Button-Text auf den Countdown-Startwert
+            showResultsButton.textContent = "00:60";
+            // Falls ein alter Countdown läuft, beenden
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            // Starte den 60-Sekunden-Countdown
+            let timeLeft = 60;
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                showResultsButton.textContent = 
+                    (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+                if(timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    showResultsButton.textContent = "Antworten anzeigen";
+                    showResultsButton.disabled = false;
+                }
+            }, 1000);
+    
             const currentQuestion = questions[currentQuestionIndex];
             const container = document.getElementById('quiz-container');
             container.innerHTML = '';
-
+    
             // Frageanzeige
             const questionTitle = document.createElement('h2');
             questionTitle.className = "text-2xl font-semibold mb-4";
             questionTitle.textContent = currentQuestion.question_text;
             container.appendChild(questionTitle);
-
-            // Badge "Fertig!" (wird eingeblendet, wenn alle 6 Stimmen vorliegen)
+    
+            // "Fertig!"-Badge (wird eingeblendet, wenn alle 6 Stimmen vorliegen)
             const badge = document.createElement('div');
             badge.id = "ready-badge";
             badge.className = "hidden inline-block bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mb-4";
             badge.textContent = "Fertig!";
             container.appendChild(badge);
-
-            // Antwortoptionen: Erstelle pro Option eine Card und speichere, ob sie richtig ist.
+    
+            // Antwortoptionen anzeigen
             const optionsList = document.createElement('div');
             optionsList.className = "space-y-4";
             currentQuestion.options.forEach(option => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = "option-card p-4 bg-gray-50 rounded shadow flex items-center justify-between";
                 optionDiv.setAttribute('data-correct', option.is_correct ? "true" : "false");
-
+    
                 const optionText = document.createElement('span');
                 optionText.className = "font-medium";
                 optionText.textContent = `${option.letter}: ${option.option_text}`;
-
+    
                 const voteCount = document.createElement('span');
                 voteCount.className = "text-xl font-bold text-blue-600";
                 voteCount.id = `vote-${option.letter}`;
                 voteCount.textContent = "";
                 voteCount.style.visibility = 'hidden';
-
+    
                 optionDiv.appendChild(optionText);
                 optionDiv.appendChild(voteCount);
                 optionsList.appendChild(optionDiv);
             });
             container.appendChild(optionsList);
-
+    
             // "Zurück"-Button deaktivieren, wenn erste Frage
             document.getElementById('back-button').disabled = (currentQuestionIndex === 0);
-
-            // Aktualisiere den aktiven Fragensatz zentral
+            // Aktualisiere den aktiven Fragensatz
             setActiveQuestion(currentQuestion.id);
-
-            // Starte Polling der Live-Ergebnisse
+            // Starte das Polling für die Live-Ergebnisse
             startPolling(currentQuestion.id);
         }
-
-        // Holt per AJAX die aktuellen Scan-Ergebnisse für die gegebene Frage
-        // Speichert die Ergebnisse in currentResults und zeigt den Button, wenn alle 6 Stimmen da sind.
+    
+        // Holt per AJAX die aktuellen Ergebnisse für die gegebene Frage
         function startPolling(questionId) {
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
                 fetch("{{ url('/quiz/results') }}/" + questionId)
-                    .then(response => response.json())
-                    .then(data => {
-                        let totalVotes = 0;
-                        for (const letter in data) {
-                            totalVotes += parseInt(data[letter]);
+                .then(response => response.json())
+                .then(data => {
+                    let totalVotes = 0;
+                    for (const letter in data) {
+                        totalVotes += parseInt(data[letter]);
+                    }
+                    // Falls alle 6 Stimmen vorhanden sind, zeige das "Fertig!"-Badge und aktiviere den Button (falls noch nicht aktiviert)
+                    if (totalVotes >= 6) {
+                        currentResults = data;
+                        document.getElementById('ready-badge').classList.remove('hidden');
+                        const showResultsButton = document.getElementById('show-results-button');
+                        if (showResultsButton.disabled) {
+                            clearInterval(countdownInterval);
+                            showResultsButton.textContent = "Antworten anzeigen";
+                            showResultsButton.disabled = false;
                         }
-                        if (totalVotes >= 6) {
-                            currentResults = data;
-                            document.getElementById('show-results-button').classList.remove('hidden');
-                            document.getElementById('ready-badge').classList.remove('hidden');
-                        } else {
-                            document.getElementById('show-results-button').classList.add('hidden');
-                            for (const letter in data) {
-                                const voteElement = document.getElementById('vote-' + letter);
-                                if (voteElement) {
-                                    voteElement.textContent = "";
-                                    voteElement.style.visibility = 'hidden';
-                                }
-                            }
-                            document.getElementById('ready-badge').classList.add('hidden');
-                        }
-                    })
-                    .catch(error => console.error("Fehler beim Abrufen der Ergebnisse:", error));
+                    }
+                })
+                .catch(error => console.error("Fehler beim Abrufen der Ergebnisse:", error));
             }, 2000);
         }
-
+    
         // Event Listener für "Antworten anzeigen" / "Lösung anzeigen"
         document.getElementById('show-results-button').addEventListener('click', () => {
             if (showResultsButtonState === 0) {
-                // Erster Klick: Ergebnisse anzeigen
                 for (const letter in currentResults) {
                     const voteElement = document.getElementById('vote-' + letter);
                     if (voteElement) {
@@ -174,7 +182,6 @@
                 document.getElementById('show-results-button').textContent = "Lösung anzeigen";
                 showResultsButtonState = 1;
             } else if (showResultsButtonState === 1) {
-                // Zweiter Klick: Optionenkarten einfärben
                 const optionCards = document.querySelectorAll('.option-card');
                 optionCards.forEach(card => {
                     const isCorrect = card.getAttribute('data-correct') === "true";
@@ -189,15 +196,15 @@
                 document.getElementById('show-results-button').disabled = true;
             }
         });
-
-        // Event Listener: "Weiter"
+    
+        // "Weiter"-Button Event Listener
         document.getElementById('next-button').addEventListener('click', () => {
             if (pollInterval) clearInterval(pollInterval);
             currentQuestionIndex++;
             renderQuestion();
         });
-
-        // Event Listener: "Zurück"
+    
+        // "Zurück"-Button Event Listener
         document.getElementById('back-button').addEventListener('click', () => {
             if (currentQuestionIndex > 0) {
                 if (pollInterval) clearInterval(pollInterval);
@@ -205,9 +212,9 @@
                 renderQuestion();
             }
         });
-
+    
         // Initiale Anzeige der ersten Frage
         renderQuestion();
-    </script>
+    </script>    
 </body>
 </html>
