@@ -40,7 +40,7 @@
     <div id="reader"></div>
 
     <!-- Einfache Einbindung ohne integrity-Attribut -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const questionId = document.getElementById("quiz_question_id").value;
