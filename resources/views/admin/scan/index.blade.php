@@ -3,108 +3,127 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>QR-Codes scannen</title>
+    <title>QR‑Codes scannen</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Basic layout and styling */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
             text-align: center;
+            background: #f5f5f5;
         }
 
         #reader {
             width: 100%;
-            height: 80vh;
-            margin: 0 auto;
-            border: 2px solid #ccc;
+            height: 100vh;
+            /* Volle Höhe */
+            margin: 0;
+            border: none;
             box-sizing: border-box;
         }
 
         #active-question {
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             font-size: 1.2rem;
-            margin-bottom: 1rem;
         }
     </style>
 </head>
 
 <body>
-    {{-- Scan page header showing the currently active quiz question --}}
-    <h2>Aktive Frage:</h2>
-    <p id="active-question">
+
+    <div id="active-question">
+        <strong>Aktive Frage:</strong><br>
         {{ $activeQuestion ? $activeQuestion->question_text : 'Keine aktive Frage gefunden.' }}
-    </p>
+    </div>
+    <input type="hidden" id="quiz_question_id" value="{{ $activeQuestion?->id }}">
 
-    {{-- Hidden field to pass the active question ID into JavaScript --}}
-    <input type="hidden" id="quiz_question_id" value="{{ $activeQuestion ? $activeQuestion->id : '' }}">
-
-    {{-- Container where the QR code scanner will render the camera feed --}}
     <div id="reader"></div>
 
-    {{-- Include the html5-qrcode library for in-browser scanning --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"
-        integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- html5-qrcode ohne integrity-Attribut -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
     <script>
-        // Retrieve the quiz question ID for API requests
-        const quizQuestionId = document.getElementById("quiz_question_id").value;
-
-        // Called when a QR code is successfully decoded
-        function qrCodeSuccessCallback(decodedText, decodedResult) {
-            console.log("QR code detected:", decodedText);
-            fetch("{{ route('admin.scan.store') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({
-                    qr_data: decodedText,
-                    quiz_question_id: quizQuestionId
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log("Scan saved:", data.scan);
-                    } else {
-                        console.error("Error saving scan:", data.error);
-                    }
-                })
-                .catch(err => console.error("Fetch error:", err));
-        }
-
-        // Called on each frame when no QR code is found (ignored here)
-        function qrCodeFailureCallback(error) {
-            // Continuous scanning - no action needed on failure
-        }
-
-        // Initialize the scanner once the DOM is ready
         document.addEventListener("DOMContentLoaded", () => {
-            const html5QrCode = new Html5Qrcode("reader");
+            const quizQuestionId = document.getElementById("quiz_question_id").value;
+            const readerElementId = "reader";
 
-            const config = {
-                fps: 10,                      // scan 10 frames per second
-                qrbox: false,                 // scan the full video area
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                },
-                videoConstraints: {
-                    facingMode: { exact: "environment" }, // use rear camera
-                    zoom: 2                                  // attempt 2x zoom if supported
+            function qrCodeSuccessCallback(decodedText, decodedResult) {
+                console.log("Erkannt:", decodedText);
+                fetch("{{ route('admin.scan.store') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({
+                        qr_data: decodedText,
+                        quiz_question_id: quizQuestionId
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) console.log("Speicher ok", data.scan);
+                        else console.warn("Speicher-Error:", data.error);
+                    })
+                    .catch(err => console.error("Fetch-Error:", err));
+            }
+
+            function qrCodeFailureCallback(error) {
+                // Ignorieren
+            }
+
+            // Scanner initialisieren
+            const html5QrCode = new Html5Qrcode(readerElementId);
+
+            // Alle Kameras abfragen, Rückkamera auswählen
+            Html5Qrcode.getCameras().then(cameras => {
+                if (!cameras || cameras.length === 0) {
+                    document.getElementById(readerElementId).innerText = "Keine Kamera gefunden.";
+                    return;
                 }
-            };
 
-            // Start the camera and begin scanning
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                qrCodeSuccessCallback,
-                qrCodeFailureCallback
-            ).catch(err => {
-                console.error("Unable to start camera:", err);
-                document.getElementById("reader").innerText =
-                    "Kamera konnte nicht gestartet werden. Bitte Browser-Berechtigungen prüfen.";
+                // Suche bevorzugt Rückkamera ("environment"), fallback auf erstes Gerät
+                let cameraId = cameras[0].id;
+                for (let cam of cameras) {
+                    if (/back|rear|environment/i.test(cam.label)) {
+                        cameraId = cam.id;
+                        break;
+                    }
+                }
+
+                const config = {
+                    fps: 30,                 // schnelleres Scanning
+                    qrbox: false,            // gesamtes Bild scannen
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    },
+                    videoConstraints: {
+                        deviceId: { exact: cameraId },
+                        // Versuche Zoom und Torch, falls unterstützt:
+                        advanced: [
+                            { zoom: 2.0 },
+                            { torch: true }
+                        ]
+                    }
+                };
+
+                html5QrCode.start(
+                    cameraId,
+                    config,
+                    qrCodeSuccessCallback,
+                    qrCodeFailureCallback
+                ).catch(err => {
+                    console.error("Kamera-Start-Fehler:", err);
+                    document.getElementById(readerElementId).innerText =
+                        "Kamera konnte nicht gestartet werden. Bitte Berechtigungen prüfen.";
+                });
+
+            }).catch(err => {
+                console.error("getCameras-Fehler:", err);
+                document.getElementById(readerElementId).innerText =
+                    "Kamera-Übersicht konnte nicht geladen werden.";
             });
         });
     </script>
