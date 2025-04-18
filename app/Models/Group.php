@@ -4,7 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\QRCode;
+use App\Models\Scan;
 
+/**
+ * Represents a group that owns multiple QR codes and related scan records.
+ *
+ * @property int $id
+ * @property string $name
+ */
 class Group extends Model
 {
     use HasFactory;
@@ -16,17 +25,21 @@ class Group extends Model
     ];
 
     /**
-     * Beziehung zu den QR-Codes, die dieser Gruppe zugeordnet sind.
+     * Get the QR codes assigned to this group.
+     *
+     * @return HasMany<QRCode>
      */
-    public function qrCodes()
+    public function qrCodes(): HasMany
     {
         return $this->hasMany(QRCode::class);
     }
 
     /**
-     * Beziehung zu den Scan-Ergebnissen dieser Gruppe.
+     * Get all scan records associated with this group.
+     *
+     * @return HasMany<Scan>
      */
-    public function scans()
+    public function scans(): HasMany
     {
         return $this->hasMany(Scan::class);
     }
