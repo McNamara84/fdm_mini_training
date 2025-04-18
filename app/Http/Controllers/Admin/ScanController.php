@@ -9,18 +9,26 @@ use App\Models\QRCode;
 use App\Models\QuizQuestion;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Controller for handling QR code scans for quiz questions in the admin panel.
+ */
 class ScanController extends Controller
 {
     /**
-     * Zeige die Scan-Seite.
-     * Hier wird der aktuell aktive Fragensatz aus der zentralen Status-Tabelle ausgelesen.
+     * Show the scan page.
+     *
+     * Reads the currently active quiz question ID from the 'active_quiz' status table.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function index()
     {
-        // Lese den aktuellen aktiven Fragensatz aus der Tabelle 'active_quiz'
+        // Retrieve the current active quiz record
         $activeQuizRecord = DB::table('active_quiz')->first();
+
         $activeQuestion = null;
         if ($activeQuizRecord) {
+            // Load the active quiz question with its options
             $activeQuestion = QuizQuestion::with('options')->find($activeQuizRecord->quiz_question_id);
         }
 
@@ -28,41 +36,44 @@ class ScanController extends Controller
     }
 
     /**
-     * Verarbeite den AJAX-Request, wenn ein QR-Code eingelesen wurde.
+     * Handle AJAX request when a QR code is scanned.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        // Validierung der Eingabedaten
+        // Validate incoming data
         $data = $request->validate([
-            'qr_data' => 'required|string',           // Erwartetes Format z. B. "Group: 1, Option: A"
+            'qr_data' => 'required|string',           // Expected format e.g. "Group: 1, Option: A"
             'quiz_question_id' => 'required|integer|exists:quiz_questions,id',
         ]);
 
-        // Erwartetes Format: "Group: X, Option: Y"
+        // Match expected "Group: X, Option: Y" pattern
         $pattern = '/Group:\s*(\d+),\s*Option:\s*([A-D])/i';
         if (preg_match($pattern, $data['qr_data'], $matches)) {
             $groupId = $matches[1];
             $optionLetter = strtoupper($matches[2]);
 
-            // Suche den passenden QR-Code in der Datenbank
+            // Find corresponding QR code
             $qrCode = QRCode::where('group_id', $groupId)
                 ->where('letter', $optionLetter)
                 ->first();
 
             if (!$qrCode) {
-                return response()->json(['error' => 'QR-Code nicht gefunden.'], 404);
+                return response()->json(['error' => 'QR code not found.'], 404);
             }
 
-            // Prüfe, ob für diese Gruppe für die ausgewählte Frage bereits eine Antwort erfasst wurde
+            // Check if a scan already exists for this group and question
             $exists = Scan::where('quiz_question_id', $data['quiz_question_id'])
                 ->where('group_id', $groupId)
                 ->exists();
 
             if ($exists) {
-                return response()->json(['error' => 'Für diese Gruppe wurde bereits ein Scan erfasst.'], 409);
+                return response()->json(['error' => 'A scan has already been recorded for this group.'], 409);
             }
 
-            // Speichere den Scan in der Datenbank
+            // Save the new scan record
             $scan = Scan::create([
                 'quiz_question_id' => $data['quiz_question_id'],
                 'qr_code_id' => $qrCode->id,
@@ -70,8 +81,9 @@ class ScanController extends Controller
             ]);
 
             return response()->json(['success' => true, 'scan' => $scan]);
-        } else {
-            return response()->json(['error' => 'Ungültiges QR-Code Format.'], 400);
         }
+
+        // Invalid QR data format
+        return response()->json(['error' => 'Invalid QR code format.'], 400);
     }
 }
