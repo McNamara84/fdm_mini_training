@@ -8,6 +8,7 @@
     <!-- Verhindert Zoom auf mobilen Geräten -->
     <meta http-equiv="permissions-policy" content="camera=(), microphone=()">
     <!-- Explizite Kamera-Richtlinie -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -169,13 +170,20 @@
 
                 // QR-Code-Daten anzeigen
                 showStatus("QR-Code erkannt: " + decodedText);
+                showDebugInfo("Sende Daten an Server: " + JSON.stringify({
+                    qr_data: decodedText,
+                    quiz_question_id: quizQuestionId
+                }));
 
-                // Speichern des Scans
+                // Speichern des Scans - CSRF-Token korrekt abrufen
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
+
                 fetch("{{ route('admin.scan.store') }}", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        "X-CSRF-TOKEN": csrfToken,
+                        "Accept": "application/json"
                     },
                     body: JSON.stringify({
                         qr_data: decodedText,
@@ -183,14 +191,18 @@
                     })
                 })
                     .then(res => {
+                        showDebugInfo(`Server-Antwort Status: ${res.status}`);
                         if (!res.ok) {
-                            throw new Error(`HTTP-Status: ${res.status}`);
+                            return res.json().then(data => {
+                                throw new Error(data.error || `HTTP-Status: ${res.status}`);
+                            });
                         }
                         return res.json();
                     })
                     .then(data => {
                         if (data.success) {
                             showStatus("QR-Code erfolgreich gespeichert!", false);
+                            showDebugInfo("Scan-ID: " + data.scan.id);
                         } else {
                             showStatus("Fehler beim Speichern: " + (data.error || "Unbekannter Fehler"), true);
                         }
