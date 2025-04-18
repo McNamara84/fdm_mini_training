@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <title>FDM-Mini-Training 1</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <div class="max-w-5xl mx-auto p-6">
-        <!-- Header mit Logos -->
+        {{-- Header section with logos and training title --}}
         <div class="flex items-center justify-between mb-6">
             <img src="{{ asset('images/fhp-logo.png') }}" alt="FHP Logo" class="h-6">
             <h1 class="text-3xl font-bold text-center">FDM-Mini-Training 1</h1>
             <img src="{{ asset('images/gfz-logo-en.png') }}" alt="GFZ Logo" class="h-6">
         </div>
         <div class="bg-white shadow-lg rounded-lg p-6">
-            <div id="quiz-container">
-                <!-- Dynamischer Inhalt: Frage und Antwortoptionen -->
-            </div>
-            <!-- Navigationsbereich mit drei Buttons: "Zurück", "Antworten anzeigen" (mit Countdown) und "Weiter" -->
+            {{-- Container where the current quiz question and its options will be dynamically rendered --}}
+            <div id="quiz-container"></div>
+
+            {{-- Navigation buttons: Back, Show Results (with countdown), Next --}}
             <div class="mt-6 flex justify-center items-center space-x-4">
                 <button id="back-button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
                     Zurück
                 </button>
-                <!-- Button ist von Anfang an sichtbar, aber deaktiviert und zeigt den Countdown -->
                 <button id="show-results-button" disabled class="bg-green-500 text-white font-bold py-2 px-4 rounded">
                     00:60
                 </button>
@@ -35,16 +36,15 @@
     </div>
 
     <script>
-        // Globale Variablen
+        // Parsed list of quiz questions from the backend
         const questions = @json($questions);
         let currentQuestionIndex = 0;
         let pollInterval;
         let countdownInterval;
-        let currentResults = {}; // Zwischenspeicherung der abgefragten Ergebnisse
-        // Status für den "show-results-button": 0 = initial, 1 = Ergebnisse sichtbar
-        let showResultsButtonState = 0;
-    
-        // Aktualisiert den aktiven Fragensatz im Backend (optional)
+        let currentResults = {};
+        let showResultsButtonState = 0; // 0 = before showing results, 1 = results visible
+
+        // Update the currently active question in the backend
         function setActiveQuestion(questionId) {
             fetch("{{ route('quiz.active.update') }}", {
                 method: "POST",
@@ -53,158 +53,135 @@
                     "X-CSRF-TOKEN": "{{ csrf_token() }}"
                 },
                 body: JSON.stringify({ quiz_question_id: questionId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    console.log("Aktiver Fragewert aktualisiert auf: " + questionId);
-                }
-            })
-            .catch(error => console.error("Fehler beim Aktualisieren des aktiven Fragewerts:", error));
+            }).catch(error => console.error("Error updating active question:", error));
         }
-    
-        // Rendert die aktuelle Frage, setzt den Countdown zurück und startet das Polling
+
+        // Render the question, reset countdown, and start polling for results
         function renderQuestion() {
             if (currentQuestionIndex >= questions.length) {
+                // Redirect to summary when all questions are done
                 window.location.href = "{{ route('quiz.summary') }}";
                 return;
             }
-            // Reset des Button-Status für die aktuelle Frage
+
+            // Reset show-results button and countdown
             showResultsButtonState = 0;
-            const showResultsButton = document.getElementById('show-results-button');
-            showResultsButton.disabled = true;
-            // Setze den Button-Text auf den Countdown-Startwert
-            showResultsButton.textContent = "00:60";
-            // Falls ein alter Countdown läuft, beenden
+            const showBtn = document.getElementById('show-results-button');
+            showBtn.disabled = true;
+            showBtn.textContent = "00:60";
             if (countdownInterval) clearInterval(countdownInterval);
-            
-            // Starte den 60-Sekunden-Countdown
+
+            // Start 60-second countdown timer
             let timeLeft = 60;
             countdownInterval = setInterval(() => {
                 timeLeft--;
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                showResultsButton.textContent = 
-                    (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-                if(timeLeft <= 0) {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                showBtn.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    showResultsButton.textContent = "Antworten anzeigen";
-                    showResultsButton.disabled = false;
+                    showBtn.textContent = "Antworten anzeigen";
+                    showBtn.disabled = false;
                 }
             }, 1000);
-    
-            const currentQuestion = questions[currentQuestionIndex];
+
+            const question = questions[currentQuestionIndex];
             const container = document.getElementById('quiz-container');
             container.innerHTML = '';
-    
-            // Frageanzeige
-            const questionTitle = document.createElement('h2');
-            questionTitle.className = "text-2xl font-semibold mb-4";
-            questionTitle.textContent = currentQuestion.question_text;
-            container.appendChild(questionTitle);
-    
-            // "Fertig!"-Badge (wird eingeblendet, wenn alle 6 Stimmen vorliegen)
+
+            // Display question text
+            const title = document.createElement('h2');
+            title.className = "text-2xl font-semibold mb-4";
+            title.textContent = question.question_text;
+            container.appendChild(title);
+
+            // 'Ready!' badge hidden until all votes are in
             const badge = document.createElement('div');
             badge.id = "ready-badge";
             badge.className = "hidden inline-block bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mb-4";
             badge.textContent = "Fertig!";
             container.appendChild(badge);
-    
-            // Antwortoptionen anzeigen
-            const optionsList = document.createElement('div');
-            optionsList.className = "space-y-4";
-            currentQuestion.options.forEach(option => {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = "option-card p-4 bg-gray-50 rounded shadow flex items-center justify-between";
-                optionDiv.setAttribute('data-correct', option.is_correct ? "true" : "false");
-    
-                const optionText = document.createElement('span');
-                optionText.className = "font-medium";
-                optionText.textContent = `${option.letter}: ${option.option_text}`;
-    
-                const voteCount = document.createElement('span');
-                voteCount.className = "text-xl font-bold text-blue-600";
-                voteCount.id = `vote-${option.letter}`;
-                voteCount.textContent = "";
-                voteCount.style.visibility = 'hidden';
-    
-                optionDiv.appendChild(optionText);
-                optionDiv.appendChild(voteCount);
-                optionsList.appendChild(optionDiv);
+
+            // Render each answer option card
+            const optionsBlock = document.createElement('div');
+            optionsBlock.className = "space-y-4";
+            question.options.forEach(opt => {
+                const card = document.createElement('div');
+                card.className = "option-card p-4 bg-gray-50 rounded shadow flex items-center justify-between";
+                card.setAttribute('data-correct', opt.is_correct);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = "font-medium";
+                textSpan.textContent = `${opt.letter}: ${opt.option_text}`;
+
+                const countSpan = document.createElement('span');
+                countSpan.id = `vote-${opt.letter}`;
+                countSpan.className = "text-xl font-bold text-blue-600";
+                countSpan.style.visibility = 'hidden';
+
+                card.appendChild(textSpan);
+                card.appendChild(countSpan);
+                optionsBlock.appendChild(card);
             });
-            container.appendChild(optionsList);
-    
-            // "Zurück"-Button deaktivieren, wenn erste Frage
+            container.appendChild(optionsBlock);
+
+            // Disable back button on the first question
             document.getElementById('back-button').disabled = (currentQuestionIndex === 0);
-            // Aktualisiere den aktiven Fragensatz
-            setActiveQuestion(currentQuestion.id);
-            // Starte das Polling für die Live-Ergebnisse
-            startPolling(currentQuestion.id);
+            setActiveQuestion(question.id);
+            startPolling(question.id);
         }
-    
-        // Holt per AJAX die aktuellen Ergebnisse für die gegebene Frage
+
+        // Poll the backend every 2 seconds for live scan counts
         function startPolling(questionId) {
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => {
-                fetch("{{ url('/quiz/results') }}/" + questionId)
-                .then(response => response.json())
-                .then(data => {
-                    let totalVotes = 0;
-                    for (const letter in data) {
-                        totalVotes += parseInt(data[letter]);
-                    }
-                    // Falls alle 6 Stimmen vorhanden sind, zeige das "Fertig!"-Badge und aktiviere den Button (falls noch nicht aktiviert)
-                    if (totalVotes >= 6) {
-                        currentResults = data;
-                        document.getElementById('ready-badge').classList.remove('hidden');
-                        const showResultsButton = document.getElementById('show-results-button');
-                        if (showResultsButton.disabled) {
-                            clearInterval(countdownInterval);
-                            showResultsButton.textContent = "Antworten anzeigen";
-                            showResultsButton.disabled = false;
+                fetch(`{{ url('/quiz/results') }}/${questionId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const totalVotes = Object.values(data).reduce((sum, v) => sum + parseInt(v), 0);
+                        if (totalVotes >= 6) {
+                            currentResults = data;
+                            document.getElementById('ready-badge').classList.remove('hidden');
+                            const btn = document.getElementById('show-results-button');
+                            if (btn.disabled) {
+                                clearInterval(countdownInterval);
+                                btn.textContent = "Antworten anzeigen";
+                                btn.disabled = false;
+                            }
                         }
-                    }
-                })
-                .catch(error => console.error("Fehler beim Abrufen der Ergebnisse:", error));
+                    }).catch(error => console.error("Error fetching results:", error));
             }, 2000);
         }
-    
-        // Event Listener für "Antworten anzeigen" / "Lösung anzeigen"
+
+        // Handle show-results button click: first show counts, then reveal correct answer
         document.getElementById('show-results-button').addEventListener('click', () => {
+            const btn = document.getElementById('show-results-button');
             if (showResultsButtonState === 0) {
-                for (const letter in currentResults) {
-                    const voteElement = document.getElementById('vote-' + letter);
-                    if (voteElement) {
-                        voteElement.textContent = currentResults[letter];
-                        voteElement.style.visibility = 'visible';
-                    }
-                }
-                document.getElementById('show-results-button').textContent = "Lösung anzeigen";
-                showResultsButtonState = 1;
-            } else if (showResultsButtonState === 1) {
-                const optionCards = document.querySelectorAll('.option-card');
-                optionCards.forEach(card => {
-                    const isCorrect = card.getAttribute('data-correct') === "true";
-                    if (isCorrect) {
-                        card.classList.remove('bg-gray-50');
-                        card.classList.add('bg-green-200');
-                    } else {
-                        card.classList.remove('bg-gray-50');
-                        card.classList.add('bg-red-200');
-                    }
+                // Show vote counts
+                Object.entries(currentResults).forEach(([letter, cnt]) => {
+                    const voteEl = document.getElementById(`vote-${letter}`);
+                    voteEl.textContent = cnt;
+                    voteEl.style.visibility = 'visible';
                 });
-                document.getElementById('show-results-button').disabled = true;
+                btn.textContent = "Lösung anzeigen";
+                showResultsButtonState = 1;
+            } else {
+                // Highlight correct vs incorrect options
+                document.querySelectorAll('.option-card').forEach(card => {
+                    const correct = card.getAttribute('data-correct') === 'true';
+                    card.classList.toggle('bg-green-200', correct);
+                    card.classList.toggle('bg-red-200', !correct);
+                });
+                btn.disabled = true;
             }
         });
-    
-        // "Weiter"-Button Event Listener
+
+        // Next and Back button event handlers
         document.getElementById('next-button').addEventListener('click', () => {
             if (pollInterval) clearInterval(pollInterval);
             currentQuestionIndex++;
             renderQuestion();
         });
-    
-        // "Zurück"-Button Event Listener
         document.getElementById('back-button').addEventListener('click', () => {
             if (currentQuestionIndex > 0) {
                 if (pollInterval) clearInterval(pollInterval);
@@ -212,9 +189,10 @@
                 renderQuestion();
             }
         });
-    
-        // Initiale Anzeige der ersten Frage
+
+        // Initial render on page load
         renderQuestion();
-    </script>    
+    </script>
 </body>
+
 </html>
